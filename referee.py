@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 # Generic referee program for Codingame bots
 import sys
 import os
@@ -6,7 +8,7 @@ import json
 import shutil
 
 class Bot:
-    def __init__(self, name, bin_file, game_name, log_stderr=False):
+    def __init__(self, name, bin_file, arguments, game_name, log_stderr=False):
         ''' Constructor for the Bot class
 
         Args:
@@ -15,9 +17,10 @@ class Bot:
           game_name  (string): Name of the game
           log_stderr (bool):   Shall we log stderr to a file ?
         '''
-        print(' - Creating bot {} running binary {}'.format(name, bin_file))
+        print(' - Creating bot {}. Command line : {} {}'.format(name, bin_file, ' '.join(arguments)))
         self.name       = name        
-        self.game_name  = game_name   
+        self.game_name  = game_name
+        self.arguments  = arguments
         self.bin_file   = bin_file    
         self.log_stderr = log_stderr  
         self.stderr_f   = None        
@@ -36,7 +39,7 @@ class Bot:
         else:
             self.stderr_f = subprocess.PIPE # We pipe so nothing appears on screen
 
-        self.process = subprocess.Popen([self.bin_file], stdin=subprocess.PIPE,
+        self.process = subprocess.Popen([self.bin_file] + self.arguments, stdin=subprocess.PIPE,
                                         stdout=subprocess.PIPE, stderr=self.stderr_f)
 
         # Redirecting handles
@@ -46,7 +49,7 @@ class Bot:
     def stop(self):
         ''' Stops the process running the bot. '''
         self.process.kill()
-        if self.stderr_f:
+        if self.log_stderr:
             self.stderr_f.close()
 
 
@@ -100,25 +103,31 @@ class Referee:
     def init_bots(self):
         ''' Initialises bots for the run '''
         for bot in self.bots_list:
-            b_name = bot['Name']
-            b_bin  = bot['Bin']
-            stderr = (self.settings['Log stderr'])
-            self.bots += [Bot(b_name, b_bin, self.game_dict["Name"], stderr)]
+            b_name      = bot['Name']
+            b_bin       = bot['Bin']
+            b_arguments = bot['Arguments']
+            stderr      = (self.settings['Log stderr'])
+            self.bots += [Bot(b_name, b_bin, b_arguments, self.game_dict["Name"], stderr)]
 
     def finalize(self):
         ''' Closing the log file descriptor '''
-        if self.stderr_f:
+        if self.settings['Log stderr']:
             self.stderr_f.close()
 
     def run_game(self, log_dir):
+        ''' Run one session of the game
+        
+        Args:
+          log_dir (string): Optional parameter stating where the bots and the game should log their stderr
+        '''
         # Creating the program process
-        game_bin = self.game_dict['Game bin']
+        game_bin   = self.game_dict['Game bin']
         start_list = [game_bin] + self.game_dict['Arguments']
 
         if self.settings['Log stderr']:
             self.stderr_f = open(log_dir + game_bin + '.log', 'w')
         else:
-            self.stderr_f = None
+            self.stderr_f = subprocess.PIPE # We pipe so we don't get anything on the screen
             
         game_proc = subprocess.Popen(start_list, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                      stderr=self.stderr_f)
@@ -128,9 +137,8 @@ class Referee:
             bot.start(log_dir)
 
         finished = False
-        while not finished:
-            cur_bot = 0
-            
+        cur_bot = 0
+        while not finished:            
             # Getting the exec code from the eval code :
             exec_code = int(game_proc.stdout.readline())
 
@@ -168,12 +176,15 @@ class Referee:
             bot.stop()
 
     def run(self):
+        ''' Runs the whole session of games and records the logs everything in subdirectories'''
         for run in range(self.runs):
-            # Clearing path if necessary, making sure everything is empty
-            log_dir = 'runs/' + self.game_name + '/run_{:03d}'.format(run+1) + '/'
-            if os.path.exists(log_dir):
-                shutil.rmtree(log_dir)
-            os.mkdir(log_dir)
+            log_dir = ''
+            if self.settings['Log stderr']:
+                # Clearing path if necessary, making sure everything is empty
+                log_dir = 'runs/' + self.game_name + '/run_{:03d}'.format(run+1) + '/'
+                if os.path.exists(log_dir):
+                    shutil.rmtree(log_dir)
+                    os.mkdir(log_dir)
             print(' - Playing run {} / {}'.format(run+1, self.runs))
             self.run_game(log_dir)
             
@@ -181,13 +192,18 @@ class Referee:
 
 
 if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print('USAGE : {} [FILE]'.format(sys.argv[0]))
+        print('  Generic referee for CG Bots.')
+        print('  You must provide a json file as configuration input for the program')
+        exit(0)
+        
     print('==============================================')
     print('================= CG Referee =================')
     print('')
     print('')
     print('Initializing referee :')
     r = Referee(sys.argv[1])
-
     print('')
     print('Running the game ...')
     r.run()

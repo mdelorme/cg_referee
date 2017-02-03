@@ -1,4 +1,3 @@
-// Evaluation program for 
 #include <iostream>
 #include <time.h>
 #include <stdlib.h>
@@ -12,7 +11,7 @@ int main(int argc, char** argv) {
   
   int n_players = atoi(argv[1]);
 
-  // Initial positions
+  // Initial positions : Random
   int x0[MAX_PLAYERS], y0[MAX_PLAYERS];
   for (int i=0; i < n_players; ++i) {
     bool valid = true;
