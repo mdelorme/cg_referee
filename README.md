@@ -62,7 +62,8 @@ Closing all descriptors
 
 After such a run, you will find all the logs of the games in the folder `runs`. This folder is organised in subfolders. The first level will correspond to the name of the game (as indicated in the configuration file), then the number of the run (eg `run_001`). In this subfolder you will find a stderr log per bot, and the stderr log of the evolution binary. Finally in the game folder (eg. `runs/Tron`), you will find the order of winner bots in the file `scores.log`. In that case, bot 1 (id 0) won the two first games and bot 2 (id 1) won the last one. So the score file will look like :
 
-```0 1
+```
+0 1
 0 1
 1 0
 ```
