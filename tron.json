@@ -1,0 +1,27 @@
+{
+    "Game": {
+	"Name": "Tron",
+	"Simultaneous": false,
+	"Game bin": "./tron",
+	"Arguments": [
+	    "2"
+	]
+    },
+
+    "Bots": [
+	{
+	    "Name": "bot1",
+	    "Bin": "./bot_1"
+	},
+	{
+	    "Name": "bot2",
+	    "Bin": "./bot_2"
+	}
+    ],
+
+    "Settings": {
+	"Log stderr": true,
+	"Log scores": true,
+	"Runs": 10
+    }
+}
