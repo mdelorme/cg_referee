@@ -25,6 +25,7 @@
     "Settings": {
 	"Log stderr": true,
 	"Log scores": true,
-	"Runs": 3
+	"Runs": 4,
+	"Threads": 2
     }
 }

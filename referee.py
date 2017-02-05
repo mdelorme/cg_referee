@@ -6,8 +6,36 @@ import os
 import subprocess
 import json
 import shutil
+import multiprocessing as mp
+import numpy as np
 
-class Bot:
+# Thanks to Steven Bethard for this nice trick, found on :
+# https://bytes.com/topic/python/answers/552476-why-cant-you-pickle-instancemethods
+# Allows the methods of Bot and Referee to be pickled for multiprocessing
+import copy_reg
+import types
+
+def _pickle_method(method):
+    func_name = method.im_func.__name__
+    obj = method.im_self
+    cls = method.im_class
+    return _unpickle_method, (func_name, obj, cls)
+
+def _unpickle_method(func_name, obj, cls):
+    for cls in cls.__mro__:
+        try:
+            func = cls.__dict__[func_name]
+            return func.__get__(obj, cls)
+        except KeyError:
+            pass
+    return None
+
+copy_reg.pickle(types.MethodType, _pickle_method, _unpickle_method)
+
+lock = mp.Lock()
+rankings = None
+
+class Bot(object):
     def __init__(self, name, bin_file, arguments, game_name, log_stderr=False):
         ''' Constructor for the Bot class
 
@@ -17,7 +45,7 @@ class Bot:
           game_name  (string): Name of the game
           log_stderr (bool):   Shall we log stderr to a file ?
         '''
-        print(' - Creating bot {}. Command line : {} {}'.format(name, bin_file, ' '.join(arguments)))
+        #print(' - Creating bot {}. Command line : {} {}'.format(name, bin_file, ' '.join(arguments)))
         self.name       = name        
         self.game_name  = game_name
         self.arguments  = arguments
@@ -53,16 +81,13 @@ class Bot:
             self.stderr_f.close()
 
 
-class Referee:
+class Referee(object):
     def __init__(self, param_file):
         ''' Constructor for the Referee class
         
         Args:
           param_file (string): Path to the JSON file holding the parameters of the game
         '''
-        
-        # Basic init
-        self.stderr_f = None
         
         # Reading the JSON-param file
         f_in = open(param_file, 'r')
@@ -93,47 +118,51 @@ class Referee:
         else:
             self.score_log = None
 
-        # Are we 
-        self.runs = int(self.settings['Runs'])
+        self.runs     = int(self.settings['Runs'])
 
-        # Bots initialization
-        self.bots = []
-        self.init_bots()
+        print('Playing games :')
+        self.run()
 
     def init_bots(self):
         ''' Initialises bots for the run '''
+        bots = []
         for bot in self.bots_list:
             b_name      = bot['Name']
             b_bin       = bot['Bin']
             b_arguments = bot['Arguments']
             stderr      = (self.settings['Log stderr'])
-            self.bots += [Bot(b_name, b_bin, b_arguments, self.game_dict["Name"], stderr)]
+            bots += [Bot(b_name, b_bin, b_arguments, self.game_dict["Name"], stderr)]
+        return bots
 
     def finalize(self):
         ''' Closing the log file descriptor '''
         if self.settings['Log stderr']:
-            self.stderr_f.close()
+            stderr_f.close()
 
-    def run_game(self, log_dir):
+    def run_game(self, run_info):
         ''' Run one session of the game
         
         Args:
-          log_dir (string): Optional parameter stating where the bots and the game should log their stderr
+          run_info (couple): A couple (int, string). The first element is the id of the run and the second
+                             the path to the log.
         '''
+        ite, log_dir = run_info
+        print(' - Playing run {}'.format(ite+1))
         # Creating the program process
         game_bin   = self.game_dict['Game bin']
         start_list = [game_bin] + self.game_dict['Arguments']
-
+        
         if self.settings['Log stderr']:
-            self.stderr_f = open(log_dir + game_bin + '.log', 'w')
+            stderr_f = open(log_dir + self.game_dict['Name'] + '.log', 'w')
         else:
-            self.stderr_f = subprocess.PIPE # We pipe so we don't get anything on the screen
+            stderr_f = subprocess.PIPE # We pipe so we don't get anything on the screen
             
         game_proc = subprocess.Popen(start_list, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                     stderr=self.stderr_f)
+                                     stderr=stderr_f)
 
-        # Starting the bots
-        for bot in self.bots:
+        # Creating the bots and starting them
+        bots = self.init_bots()
+        for bot in bots:
             bot.start(log_dir)
 
         finished = False
@@ -154,39 +183,85 @@ class Referee:
                 # Sending input to the bot
                 for i in range(exec_code):
                     line = game_proc.stdout.readline()
-                    self.bots[cur_bot].stdin.write(line+'\n')
+                    bots[cur_bot].stdin.write(line+'\n')
 
                 # Reading output
-                line = self.bots[cur_bot].stdout.readline()
+                line = bots[cur_bot].stdout.readline()
                 game_proc.stdin.write(line+'\n')
 
             # Next bot
-            cur_bot = (cur_bot + 1) % len(self.bots)
+            cur_bot = (cur_bot + 1) % len(bots)
 
         # Once we have finished, we display the ranking
-        s = '   . Ranking = ' + '; '.join(self.bots[i].name for i in ranking)
-        print(s)
+        s = '   . Ranking = ' + '; '.join(bots[i].name for i in ranking)
 
-        if self.score_log:
-            self.score_log.write(' '.join(str(i) for i in ranking) + '\n')
-            self.score_log.flush()
+        global lock, rankings
+        lock.acquire()
+        nbots = len(ranking)
+        for rank, id_bot in enumerate(ranking):
+            rankings[id_bot * nbots + rank] += 1
+        lock.release()
 
         # Stopping the bots
-        for bot in self.bots:
+        for bot in bots:
             bot.stop()
 
     def run(self):
         ''' Runs the whole session of games and records the logs everything in subdirectories'''
+
+        # Creating the Pool of tasks
+        runs = []
+        nbots = len(self.bots_list)
+        global rankings
+        rankings = mp.Array('f', [0]*(nbots*nbots))
+        
         for run in range(self.runs):
             log_dir = ''
             if self.settings['Log stderr']:
                 # Clearing path if necessary, making sure everything is empty
                 log_dir = 'runs/' + self.game_name + '/run_{:03d}'.format(run+1) + '/'
                 if os.path.exists(log_dir):
-                    shutil.rmtree(log_dir)
-                    os.mkdir(log_dir)
-            print(' - Playing run {} / {}'.format(run+1, self.runs))
-            self.run_game(log_dir)
+                    shutil.rmtree(log_dir)    
+                os.mkdir(log_dir)
+            runs += [(run, log_dir)] 
+
+        # If mono-threaded then run everything in order
+        nthreads = self.settings['Threads']
+        if nthreads == 1:
+            for run_info in runs:
+                self.run_game(run_info)
+        else:
+            pool = mp.Pool(nthreads)
+            pool.map(self.run_game, runs)
+
+        # Writing the rankings to a file
+        if self.settings['Log scores']:
+            score_log = open('runs/' + self.game_name + '/scores.log', 'w')
+            for bot in range(nbots):
+                s = ''
+                for i in range(nbots):
+                    s += '{:.2f}'.format(rankings[bot * nbots + i] / self.settings['Runs']) + '\t'
+                    
+                score_log.write(s + '\n')
+                score_log.flush()
+                
+            score_log.close()
+
+        # Printing the stats for every game :
+        print('Statistics (in percents) :')
+        s = 'Bot name\t'
+        for bot in range(nbots):
+            s += 'Rank {}\t'.format(bot + 1)
+        print(s)
+
+        for bot in range(nbots):
+            s = '{}\t\t'.format(self.bots_list[bot]['Name'])
+            for i in range(nbots):
+                rankings[bot * nbots + i] *= 100.0 / self.settings['Runs']
+                s += '{:.2f}'.format(rankings[bot * nbots + i]) + '\t'
+            print(s)
+
+            
             
         
 
@@ -202,11 +277,6 @@ if __name__ == '__main__':
     print('================= CG Referee =================')
     print('')
     print('')
-    print('Initializing referee :')
+    print('Running the game :')
     r = Referee(sys.argv[1])
-    print('')
-    print('Running the game ...')
-    r.run()
-    print('Closing all descriptors')
-    r.finalize()
     
