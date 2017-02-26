@@ -8,6 +8,10 @@ import json
 import shutil
 import multiprocessing as mp
 import numpy as np
+import random
+from copy import copy
+
+seed_bank = []
 
 # Thanks to Steven Bethard for this nice trick, found on :
 # https://bytes.com/topic/python/answers/552476-why-cant-you-pickle-instancemethods
@@ -88,6 +92,7 @@ class Referee(object):
         Args:
           param_file (string): Path to the JSON file holding the parameters of the game
         '''
+        global seed_bank
         
         # Reading the JSON-param file
         f_in = open(param_file, 'r')
@@ -120,6 +125,14 @@ class Referee(object):
 
         self.runs     = int(self.settings['Runs'])
 
+        if "Seed" in self.settings:
+            random.seed(self.settings['Seed'])
+        else:
+            random.seed(12345678)
+            
+        seed_bank = [random.randint(0, 100000) for _ in range(self.runs)]
+
+
         print('Playing games :')
         self.run()
 
@@ -146,11 +159,19 @@ class Referee(object):
           run_info (couple): A couple (int, string). The first element is the id of the run and the second
                              the path to the log.
         '''
-        ite, log_dir = run_info
+        global lock, rankings, seed_bank
+        
+        ite, log_dir, seed = run_info
         print(' - Playing run {}'.format(ite+1))
         # Creating the program process
         game_bin   = self.game_dict['Game bin']
-        start_list = [game_bin] + self.game_dict['Arguments']
+
+        args = copy(self.game_dict['Arguments'])
+        for i, arg in enumerate(args):
+            if arg == '$seed':
+                args[i] = str(seed)
+        
+        start_list = [game_bin] + args
         
         if self.settings['Log stderr']:
             stderr_f = open(log_dir + self.game_dict['Name'] + '.log', 'w')
@@ -202,7 +223,6 @@ class Referee(object):
         else:
             s += '; '.join(bots[i].name for i in ranking)
 
-        global lock, rankings
         lock.acquire()
         # if tied : We add 1 to the first ranking of every bot
         sys.stdout.flush()
@@ -237,7 +257,7 @@ class Referee(object):
                 if os.path.exists(log_dir):
                     shutil.rmtree(log_dir)    
                 os.mkdir(log_dir)
-            runs += [(run, log_dir)] 
+            runs += [(run, log_dir, seed_bank.pop())] 
 
         # If mono-threaded then run everything in order
         nthreads = self.settings['Threads']
