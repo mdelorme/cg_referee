@@ -182,11 +182,11 @@ class Referee(object):
             elif exec_code > 0:
                 # Sending input to the bot
                 for i in range(exec_code):
-                    line = game_proc.stdout.readline()
+                    line = game_proc.stdout.readline().strip()
                     bots[cur_bot].stdin.write(line+'\n')
 
                 # Reading output
-                line = bots[cur_bot].stdout.readline()
+                line = bots[cur_bot].stdout.readline().strip()
                 game_proc.stdin.write(line+'\n')
 
             # Next bot
