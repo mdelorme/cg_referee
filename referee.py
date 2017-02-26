@@ -170,14 +170,16 @@ class Referee(object):
         while not finished:            
             # Getting the exec code from the eval code :
             exec_code = int(game_proc.stdout.readline())
-
             # Behaviour depending on the code :
             # < 0 : The game is finished and the bots are ranked in the next line
             # = 0 : The current bot is not active anymore
             # > 0 : The current bot is active and the system is providing exec_code lines to feed it
             if exec_code < 0:
                 rank_str = game_proc.stdout.readline().strip()
-                ranking = [int(x) for x in rank_str.split(' ')]
+                if rank_str == 'tied':
+                    ranking = 'tied'
+                else:
+                    ranking = [int(x) for x in rank_str.split(' ')]
                 finished = True
             elif exec_code > 0:
                 # Sending input to the bot
@@ -193,13 +195,25 @@ class Referee(object):
             cur_bot = (cur_bot + 1) % len(bots)
 
         # Once we have finished, we display the ranking
-        s = '   . Ranking = ' + '; '.join(bots[i].name for i in ranking)
+        
+        s = '   . Ranking = '
+        if ranking == 'tied':
+            s += 'tied'
+        else:
+            s += '; '.join(bots[i].name for i in ranking)
 
         global lock, rankings
         lock.acquire()
-        nbots = len(ranking)
-        for rank, id_bot in enumerate(ranking):
-            rankings[id_bot * nbots + rank] += 1
+        # if tied : We add 1 to the first ranking of every bot
+        sys.stdout.flush()
+        nbots = len(bots)
+        if ranking == 'tied':
+            for id_bot in range(nbots):
+                rankings[id_bot * nbots] += 1
+        else:
+            nbots = len(ranking)
+            for rank, id_bot in enumerate(ranking):
+                rankings[id_bot * nbots + rank] += 1
         lock.release()
 
         # Stopping the bots
