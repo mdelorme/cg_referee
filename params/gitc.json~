@@ -1,0 +1,33 @@
+{
+    "Game": {
+	"Name": "GITC",
+	"Game bin": "python3",
+	"Arguments": [
+	    "engines/gitc.py",
+	    "$seed"
+	]
+    },
+
+    "Bots": [
+	{
+	    "Name": "silver_bot",
+	    "Bin": "../gitc/cpp_version/gitc_silver",
+	    "Arguments": [
+	    ]
+	},
+	{
+	    "Name": "latest",
+	    "Bin": "../gitc/cpp_version/gitc",
+	    "Arguments": [
+	    ]
+	}
+    ],
+
+    "Settings": {
+	"Log stderr": true,
+	"Log scores": true,
+	"Runs": 25,
+	"Threads": 4,
+	"Seed": 26111996
+    }
+}

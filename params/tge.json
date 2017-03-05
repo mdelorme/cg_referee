@@ -1,0 +1,32 @@
+{
+    "Game": {
+	"Name": "TGE",
+	"Game bin": "python3",
+	"Arguments": [
+	    "./tge.py",
+	    "2"
+	]
+    },
+
+    "Bots": [
+	{
+	    "Name": "bot1",
+	    "Bin": "./tge",
+	    "Arguments": [
+	    ]
+	},
+	{
+	    "Name": "bot2",
+	    "Bin": "./tge",
+	    "Arguments": [
+	    ]
+	}
+    ],
+
+    "Settings": {
+	"Log stderr": true,
+	"Log scores": true,
+	"Runs": 4,
+	"Threads": 2
+    }
+}
