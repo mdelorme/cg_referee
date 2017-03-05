@@ -128,7 +128,7 @@ class Referee(object):
         if "Seed" in self.settings:
             random.seed(self.settings['Seed'])
         else:
-            random.seed(12345678)
+            random.seed()
             
         seed_bank = [random.randint(0, 100000) for _ in range(self.runs)]
 
@@ -188,57 +188,60 @@ class Referee(object):
 
         finished = False
         cur_bot = 0
-        while not finished:            
-            # Getting the exec code from the eval code :
-            exec_code = int(game_proc.stdout.readline())
-            # Behaviour depending on the code :
-            # < 0 : The game is finished and the bots are ranked in the next line
-            # = 0 : The current bot is not active anymore
-            # > 0 : The current bot is active and the system is providing exec_code lines to feed it
-            if exec_code < 0:
-                rank_str = game_proc.stdout.readline().strip()
-                if rank_str == 'tied':
-                    ranking = 'tied'
-                else:
-                    ranking = [int(x) for x in rank_str.split(' ')]
-                finished = True
-            elif exec_code > 0:
-                # Sending input to the bot
-                for i in range(exec_code):
-                    line = game_proc.stdout.readline().strip()
-                    bots[cur_bot].stdin.write(line+'\n')
+        try:
+            while not finished:            
+                # Getting the exec code from the eval code :
+                exec_code = int(game_proc.stdout.readline())
+                # Behaviour depending on the code :
+                # < 0 : The game is finished and the bots are ranked in the next line
+                # = 0 : The current bot is not active anymore
+                # > 0 : The current bot is active and the system is providing exec_code lines to feed it
+                if exec_code < 0:
+                    rank_str = game_proc.stdout.readline().strip()
+                    if rank_str == 'tied':
+                        ranking = 'tied'
+                    else:
+                        ranking = [int(x) for x in rank_str.split(' ')]
+                    finished = True
+                elif exec_code > 0:
+                    # Sending input to the bot
+                    for i in range(exec_code):
+                        line = game_proc.stdout.readline().strip()
+                        bots[cur_bot].stdin.write(line+'\n')
 
-                # Reading output
-                line = bots[cur_bot].stdout.readline().strip()
-                game_proc.stdin.write(line+'\n')
+                    # Reading output
+                    line = bots[cur_bot].stdout.readline().strip()
+                    game_proc.stdin.write(line+'\n')
 
-            # Next bot
-            cur_bot = (cur_bot + 1) % len(bots)
+                # Next bot
+                cur_bot = (cur_bot + 1) % len(bots)
 
-        # Once we have finished, we display the ranking
+            # Once we have finished, we display the ranking
         
-        s = '   . Ranking = '
-        if ranking == 'tied':
-            s += 'tied'
-        else:
-            s += '; '.join(bots[i].name for i in ranking)
+            s = '   . Ranking = '
+            if ranking == 'tied':
+                s += 'tied'
+            else:
+                s += '; '.join(bots[i].name for i in ranking)
 
-        lock.acquire()
-        # if tied : We add 1 to the first ranking of every bot
-        sys.stdout.flush()
-        nbots = len(bots)
-        if ranking == 'tied':
-            for id_bot in range(nbots):
-                rankings[id_bot * nbots] += 1
-        else:
-            nbots = len(ranking)
-            for rank, id_bot in enumerate(ranking):
-                rankings[id_bot * nbots + rank] += 1
-        lock.release()
+            lock.acquire()
+            # if tied : We add 1 to the first ranking of every bot
+            sys.stdout.flush()
+            nbots = len(bots)
+            if ranking == 'tied':
+                for id_bot in range(nbots):
+                    rankings[id_bot * nbots] += 1
+            else:
+                nbots = len(ranking)
+                for rank, id_bot in enumerate(ranking):
+                    rankings[id_bot * nbots + rank] += 1
+            lock.release()
 
-        # Stopping the bots
-        for bot in bots:
-            bot.stop()
+            # Stopping the bots
+            for bot in bots:
+                bot.stop()
+        except:
+            print('Error while running run {}'.format(ite+1))
 
     def run(self):
         ''' Runs the whole session of games and records the logs everything in subdirectories'''
@@ -283,13 +286,13 @@ class Referee(object):
 
         # Printing the stats for every game :
         print('Statistics (in percents) :')
-        s = 'Bot name\t'
+        s = '{:<15}'.format('Bot name')
         for bot in range(nbots):
             s += 'Rank {}\t'.format(bot + 1)
         print(s)
 
         for bot in range(nbots):
-            s = '{}\t\t'.format(self.bots_list[bot]['Name'])
+            s = '{:<15}\t'.format(self.bots_list[bot]['Name'])
             for i in range(nbots):
                 rankings[bot * nbots + i] *= 100.0 / self.settings['Runs']
                 s += '{:.2f}'.format(rankings[bot * nbots + i]) + '\t'
