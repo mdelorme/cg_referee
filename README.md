@@ -7,11 +7,10 @@ The system is as disconnected from a single game as possible, so you have to cod
 
 The referee is written in Python. It should work on any machine having Python 2.5+ but has been only tested on Linux.
 
-**Important note** : This is a work in progress. For the moment, the referee system only works with asynchronous games (The Great Escape, Tron, etc.). It can be used for the synchronous games but will require some tricks to function correctly.
+**Important note** : This is a work in progress. Some features are missing. For instance, it is not possible to test position swapping in games yet.
 
 ## Todo list for the next versions :
 
-* Setting a parameter to discriminate between sync and async games (sync : when all the bots get the info of the beginning of the turn and evolve at the same time (e.g. Fantastic Bits, Coders Strike Back); async is the other mode (TGE, Tron).
 * Adding a parameter to swap the positions of a run. This will be necessarily mixed with the inputs of the game binary.
 * Checking the time of response of the bots to kill them if they are too long to respond.
 
@@ -142,6 +141,10 @@ The number of games to play in that session.
 #### `Theads`
 
 The number of threads to compute the runs. Each run will be assigned to a single thread.
+
+#### `Seed`
+
+It is now possible to indicate a seed for the Referee. The referee will then provide a series of seeds to the game so that the initialisation will persist in-between runs. Note that for the seed to be used, you will have to provide it to the game engine. The seed is read by the engine as a command line argument, and, if you want to use it, it should be included in the parameters of the engine as a parameter calle `$seed`. For an example, see the GITC parameter file and engine. Please also note that using the same seed as the ones given by the Codingame IDE will not give you the same initialization ... 
 
 
 ## Coding a game binary
