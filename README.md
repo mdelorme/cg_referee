@@ -162,6 +162,7 @@ The game binary in itself will always have the same structure in pseudo-code :
 while (true):
   If game is finished:
     Write -1 to stdout
+    Write ranking
   Else If current_player is dead:
     Write 0 to stdout
   Else
@@ -181,4 +182,6 @@ If we take the example of Tron, if we have 3 players in game, and the current pl
 
 The second important thing is that once the inputs of a bot send, the game binary must expect the answer of the bot for this turn. Thus, reading a the result of its action on stdin. This input will be exactly the same as the output provided by the bot. Then, the game binary will apply the effect of this action to the game state and skip to the next player.
 
-If things are getting confused, read the `tron_eval.cpp` file provided as an example to work for Tron.
+Finally if the game is finished, the engine must return the ranking to the referee. The ranking is the order of the players, starting from 0, and separated by spaces. If the game ends up in a tie, you can just send `tied`, and every players will be considered as first place.
+
+If things are getting confused, read the `tron_eval.cpp` or the `gitc.py` files provided as an example to work for Tron and Ghost in the Cell.
