@@ -12,6 +12,10 @@ import random
 from copy import copy
 
 seed_bank = []
+debug = False
+
+def log(p_from, p_to, msg):
+    print('{} to {} -- {}'.format(p_from, p_to, msg))
 
 # Thanks to Steven Bethard for this nice trick, found on :
 # https://bytes.com/topic/python/answers/552476-why-cant-you-pickle-instancemethods
@@ -192,12 +196,16 @@ class Referee(object):
             while not finished:            
                 # Getting the exec code from the eval code :
                 exec_code = int(game_proc.stdout.readline())
+                if debug:
+                    log('Engine', 'Referee', exec_code)
                 # Behaviour depending on the code :
                 # < 0 : The game is finished and the bots are ranked in the next line
                 # = 0 : The current bot is not active anymore
                 # > 0 : The current bot is active and the system is providing exec_code lines to feed it
                 if exec_code < 0:
                     rank_str = game_proc.stdout.readline().strip()
+                    if debug:
+                        log('Engine', 'Referee', rank_str)
                     if rank_str == 'tied':
                         ranking = 'tied'
                     else:
@@ -207,10 +215,14 @@ class Referee(object):
                     # Sending input to the bot
                     for i in range(exec_code):
                         line = game_proc.stdout.readline().strip()
+                        if debug:
+                            log('Engine', bots[cur_bot].name, line)
                         bots[cur_bot].stdin.write(line+'\n')
 
                     # Reading output
                     line = bots[cur_bot].stdout.readline().strip()
+                    if debug:
+                        log(bots[cur_bot].name, 'Engine', line)
                     game_proc.stdin.write(line+'\n')
 
                 # Next bot
