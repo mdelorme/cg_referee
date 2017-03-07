@@ -9,10 +9,15 @@ import shutil
 import multiprocessing as mp
 import numpy as np
 import random
+import time
 from copy import copy
 
 seed_bank = []
 debug = False
+
+t_limit = 0.1
+t_limit_large = 1.0
+t_limit_sigma = 0.05 # Variation accepted on the max time, to make sure communication time is not impairing a bot
 
 def log(p_from, p_to, msg):
     print('{} to {} -- {}'.format(p_from, p_to, msg))
@@ -127,7 +132,7 @@ class Referee(object):
         else:
             self.score_log = None
 
-        self.runs     = int(self.settings['Runs'])
+        self.runs = int(self.settings['Runs'])
 
         if "Seed" in self.settings:
             random.seed(self.settings['Seed'])
@@ -192,6 +197,7 @@ class Referee(object):
 
         finished = False
         cur_bot = 0
+        turn = 0
         try:
             while not finished:            
                 # Getting the exec code from the eval code :
@@ -213,20 +219,36 @@ class Referee(object):
                     finished = True
                 elif exec_code > 0:
                     # Sending input to the bot
+                    t_start = None
+                    t_end   = None
                     for i in range(exec_code):
                         line = game_proc.stdout.readline().strip()
                         if debug:
                             log('Engine', bots[cur_bot].name, line)
+
                         bots[cur_bot].stdin.write(line+'\n')
+                        if i==0:
+                            t_start = time.time()
 
                     # Reading output
                     line = bots[cur_bot].stdout.readline().strip()
+                    t_end = time.time()
+
+                    if turn < len(bots):
+                        max_time = t_limit_large * (1.0 + t_limit_sigma)
+                    else:
+                        max_time = t_limit * (1.0 + t_limit_sigma)
+
+                    if (t_end - t_start) > max_time:
+                        print('Run {} : Bot {} exceeds allocated time !'.format(ite+1, bots[cur_bot].name))
+                    
                     if debug:
                         log(bots[cur_bot].name, 'Engine', line)
                     game_proc.stdin.write(line+'\n')
 
                 # Next bot
                 cur_bot = (cur_bot + 1) % len(bots)
+                turn += 1
 
             # Once we have finished, we display the ranking
         
