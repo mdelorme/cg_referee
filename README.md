@@ -5,9 +5,19 @@
 Generic referee system for Codingame bots.
 The system is as disconnected from a single game as possible, so you have to code an additional game binary that will manage the evolution of the game and tell the referee when a game is over.
 
-The referee is written in Python. It should work on any machine having Python 2.5+ but has been only tested on Linux.
+The referee is written in Python. It should work on any machine having Python 2.5+ but has been only tested on Linux. The referee does not work yet on Python 3, although it could be adapted. Unfortunately, all attempts have been ending in failure because of the peculiar serialization used for multiprocessing. If anyone wants the challenge, please feel free to fork and add a pull request :)
 
 **Important note** : This is a work in progress. Some features are missing. For instance, it is not possible to test position swapping in games yet.
+
+## Dependencies :
+
+The referee requires a working version of Python 2.5+. Other than that, everything is supposed to be standard in its code, so you should not have to install any additional requirements.
+
+## List of Engines included in the package :
+ * Ghost in the Cell (Python 3)
+ * Tron (C++)
+
+If you feel like contributing, feel free to send your engines to me, I'll include them with pleasure to the repo.
 
 ## Todo list for the next versions :
 
