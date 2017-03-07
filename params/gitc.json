@@ -16,7 +16,7 @@
 	    ]
 	},
 	{
-	    "Name": "bot2",
+	    "Name": "bot_2",
 	    "Bin": "../blah",
 	    "Arguments": [
 	    ]
