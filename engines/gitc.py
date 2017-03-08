@@ -253,10 +253,11 @@ def execute_orders(pid, actions):
         if atype == '0_BOMB':
             f_from = int(action[1])
             f_to   = int(action[2])
+            valid = True
 
             if nbombs[pid+1] == 0:
-                log('Player {} tries to send a bomb, but no bombs left !'.format(pid))
-                return False
+                log('WARNING : Player {} tries to send a bomb, but no bombs left !'.format(pid))
+                valid = False
 
             if f_from < 0 or f_from >= len(factories):
                 log('Player {} : non-existent factory {}'.format(pid, f_from))
@@ -270,15 +271,16 @@ def execute_orders(pid, actions):
                 log('Player {} : can\'t bomb the sender ! : from == to ...'.format(pid))
                 return False
 
-            bomb_targets += [f_to]
+            if valid:
+                bomb_targets += [f_to]
 
-            b = Bomb()
-            b.owner = pid
-            b.f_from = f_from
-            b.f_to   = f_to
-            b.timer  = dist_table[f_from, f_to]
-            nbombs[pid+1] -= 1
-            log('Player {} sending bomb from {} to {}'.format(pid, f_from, f_to))
+                b = Bomb()
+                b.owner = pid
+                b.f_from = f_from
+                b.f_to   = f_to
+                b.timer  = dist_table[f_from, f_to]
+                nbombs[pid+1] -= 1
+                log('Player {} sending bomb from {} to {}'.format(pid, f_from, f_to))
 
             
         elif atype == '1_MOVE':
@@ -302,14 +304,20 @@ def execute_orders(pid, actions):
                 log('Player {} tries to move units from enemy factory {}'.format(pid, f_from))
                 return False
 
-            count  = min(int(action[3]), factories[f_from].ncyborgs)
+            count  = int(action[3])
 
             if count < 0:
                 log('Player {} tries to move {} units ...'.format(pid, count))
                 return False
 
             # If everything is ok, we create the troop
-            if count > 0 and f_to not in bomb_targets:
+            if count > 0 and f_to not in bomb_targets and factories[f_from].ncyborgs > 0:
+
+                if count > factories[f_from].ncyborgs:
+                    count = factories[f_from].ncyborgs
+                    log('WARNING : Player {} tries to more more units than available at factory {}. Scaled down to {}'.format(pid,
+                                                                                                                              f_from,
+                                                                                                                              count))
                 t          = Troop()
                 t.owner    = pid
                 t.ncyborgs = count
@@ -320,14 +328,18 @@ def execute_orders(pid, actions):
                 troops += [t]
                 factories[f_from].ncyborgs -= count
                 log('Player {} creating new troop, {} {} {}, ETA = {}'.format(pid,
-                                                                                 t.f_from,
-                                                                                 t.f_to,
-                                                                                 count,
-                                                                                 t.eta))
+                                                                              t.f_from,
+                                                                              t.f_to,
+                                                                              count,
+                                                                              t.eta))
+            elif f_to in bomb_targets:
+                log('WARNING : Player {} tries to send troops to bomb destination {}, move cancelled'.format(pid, t.f_to))
+            elif count == 0:
+                log('WARNING : Player {} tries to send 0 troops ! Move ignored.'.format(pid))
                 
         elif atype == '2_INC':
             f_from = int(action[1])
-
+            valid = True
             # Errors
             if f_from < 0 or f_from >= len(factories):
                 log('Player {} : non-existent factory {}'.format(pid, f_from))
@@ -339,15 +351,17 @@ def execute_orders(pid, actions):
 
             if factories[f_from].ncyborgs < 10:
                 log('Player {} tries to inc a factory {} with not enough robots'.format(pid, f_from))
-                return False
+                valid = False
 
             if factories[f_from].prod == 3:
-                log('Player {} tries to inc the already maxxed factory {}'.format(pid, f_from))
+                log('WARNING : Player {} tries to inc the already maxxed factory {}'.format(pid, f_from))
+                valid = False
 
-            factories[f_from].prod    += 1
-            factories[f_from].ncyborgs -= 10
+            if valid:
+                factories[f_from].prod    += 1
+                factories[f_from].ncyborgs -= 10
 
-            log('Player {} increases production of factory {} to {}'.format(pid, f_from, factories[f_from].prod))
+                log('Player {} increases production of factory {} to {}'.format(pid, f_from, factories[f_from].prod))
         elif atype == 'MSG':
             log('Player {} says {}'.format(pid, action))
         elif atype == 'WAIT':
