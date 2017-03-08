@@ -15,7 +15,7 @@ The referee is written in Python. It should work on any machine having Python 2.
 
 ## Dependencies :
 
-The referee requires a working version of Python 2.5+. Other than that, everything is supposed to be standard in its code, so you should not have to install any additional requirements.
+The referee requires a working version of Python 2.5+. Other than that, everything is supposed to be standard in its code, so you should not have to install any additional requirements. You will also need numpy (a Python package). But, in any case you should get numpy, 'cause numpy is awesome.
 
 ## List of Engines included in the package :
  * Ghost in the Cell (Python 3)
