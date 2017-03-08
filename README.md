@@ -9,6 +9,10 @@ The referee is written in Python. It should work on any machine having Python 2.
 
 **Important note** : This is a work in progress. Some features are missing. For instance, it is not possible to test position swapping in games yet.
 
+## Changes :
+
+ * 08/03/17 : Changed the GITC bot to be Python2 so people don't have to install 2 different version of Python on their machines, one for the referee, one for the engine (unless you already have Python 3 ...).
+
 ## Dependencies :
 
 The referee requires a working version of Python 2.5+. Other than that, everything is supposed to be standard in its code, so you should not have to install any additional requirements.
