@@ -123,7 +123,7 @@ def init():
             if i == 1:
                 factories[i].owner   = 1
                 factories[i+1].owner = -1
-            else;
+            else:
                 factories[i].owner   = 0
                 factories[i+1].owner = 0
             
