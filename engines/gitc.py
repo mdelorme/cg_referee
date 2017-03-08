@@ -102,7 +102,11 @@ def init():
         
         if valid:
             prod_rate = random.randint(min_prod_rate, max_prod_rate)
-            init_unit = random.randint(min_init_units, max_init_units)
+
+            if i == 1:
+                init_unit = random.randint(min_init_units, max_init_units)
+            else:
+                init_unit = random.randint(0, 5*prod_rate + 1)
 
             factories[i].fid      = i
             factories[i].x        = x
@@ -119,9 +123,10 @@ def init():
             if i == 1:
                 factories[i].owner   = 1
                 factories[i+1].owner = -1
-            else:
+            else;
                 factories[i].owner   = 0
                 factories[i+1].owner = 0
+            
 
             total_prod += 2 * prod_rate
             i += 2
