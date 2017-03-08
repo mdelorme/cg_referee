@@ -1,7 +1,7 @@
 {
     "Game": {
 	"Name": "GITC",
-	"Game bin": "python3",
+	"Game bin": "python",
 	"Arguments": [
 	    "engines/gitc.py",
 	    "$seed"

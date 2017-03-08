@@ -16,6 +16,9 @@ damage_duration = 5
 nbombs = [2, 0, 2]
 scores = [0, 0, 0]
 
+def log(x):
+    sys.stderr.write(x+'\n')
+
 if len(sys.argv) > 1:
     seed = sys.argv[1]
 else:
@@ -62,8 +65,8 @@ def dist(x1, y1, x2, y2):
 def init():
     global factories
     global dist_table
-    print('Initialising game', file=sys.stderr)
-    print(' - Random seed = {}'.format(seed), file=sys.stderr)
+    log('Initialising game')
+    log(' - Random seed = {}'.format(seed))
 
     factory_count = random.randint(min_factory_count, max_factory_count)
     if factory_count % 2 == 0:
@@ -74,7 +77,7 @@ def init():
     
     factories = [Factory() for _ in range(factory_count)]
 
-    print(' - n_factories = {}'.format(factory_count), file=sys.stderr)
+    log(' - n_factories = {}'.format(factory_count))
     
     # Adding one at the center
     factories[0].fid   = 0
@@ -141,17 +144,17 @@ def init():
             dist_table[f2.fid, f1.fid] = d
 
     # Debug info
-    print(' - Distance table :', file=sys.stderr)
+    log(' - Distance table :')
     for i1 in range(factory_count):
         s = '    '
         for i2 in range(factory_count):
             s += '{:>3d}'.format(dist_table[i1, i2])
-        print(s, file=sys.stderr)
+        log(s)
 
-    print(' - Factories :', file=sys.stderr)
-    print('\t\t#ID\tOwner\tProd\tUnits', file=sys.stderr)
+    log(' - Factories :')
+    log('\t\t#ID\tOwner\tProd\tUnits')
     for f in factories:
-        print('\t\t{}\t{}\t{}\t{}'.format(f.fid, f.owner, f.prod, f.ncyborgs), file=sys.stderr)
+        log('\t\t{}\t{}\t{}\t{}'.format(f.fid, f.owner, f.prod, f.ncyborgs))
 
 
 def turn_owner(turn, owner):
@@ -218,7 +221,7 @@ def end_game(ranking, tied=False):
     res = ranking
     if tied:
         res = 'tied'
-    print('Game ending with ranking : ' + res, file=sys.stderr)
+    log('Game ending with ranking : ' + res)
     print(res)
     exit(0)
 
@@ -247,19 +250,19 @@ def execute_orders(pid, actions):
             f_to   = int(action[2])
 
             if nbombs[pid+1] == 0:
-                print('Player {} tries to send a bomb, but no bombs left !'.format(pid), file=sys.stderr)
+                log('Player {} tries to send a bomb, but no bombs left !'.format(pid))
                 return False
 
             if f_from < 0 or f_from >= len(factories):
-                print('Player {} : non-existent factory {}'.format(pid, f_from), file=sys.stderr)
+                log('Player {} : non-existent factory {}'.format(pid, f_from))
                 return False
 
             if f_to < 0 or f_to >= len(factories):
-                print('Player {} : non-existent factory {}'.format(pid, f_to), file=sys.stderr)
+                log('Player {} : non-existent factory {}'.format(pid, f_to))
                 return False
 
             if f_to == f_from:
-                print('Player {} : can\'t bomb the sender ! : from == to ...'.format(pid), file=sys.stderr)
+                log('Player {} : can\'t bomb the sender ! : from == to ...'.format(pid))
                 return False
 
             bomb_targets += [f_to]
@@ -270,7 +273,7 @@ def execute_orders(pid, actions):
             b.f_to   = f_to
             b.timer  = dist_table[f_from, f_to]
             nbombs[pid+1] -= 1
-            print('Player {} sending bomb from {} to {}'.format(pid, f_from, f_to), file=sys.stderr)
+            log('Player {} sending bomb from {} to {}'.format(pid, f_from, f_to))
 
             
         elif atype == '1_MOVE':
@@ -279,25 +282,25 @@ def execute_orders(pid, actions):
 
             # Errors
             if f_from < 0 or f_from >= len(factories):
-                print('Player {} : non-existent factory {}'.format(pid, f_from), file=sys.stderr)
+                log('Player {} : non-existent factory {}'.format(pid, f_from))
                 return False
 
             if f_to < 0 or f_to >= len(factories):
-                print('Player {} : non-existent factory {}'.format(pid, f_to), file=sys.stderr)
+                log('Player {} : non-existent factory {}'.format(pid, f_to))
                 return False
 
             if f_to == f_from:
-                print('Player {} : sending units : from == to ...'.format(pid), file=sys.stderr)
+                log('Player {} : sending units : from == to ...'.format(pid))
                 return False
 
             if factories[f_from].owner != pid:
-                print('Player {} tries to move units from enemy factory {}'.format(pid, f_from), file=sys.stderr)
+                log('Player {} tries to move units from enemy factory {}'.format(pid, f_from))
                 return False
 
             count  = min(int(action[3]), factories[f_from].ncyborgs)
 
             if count < 0:
-                print('Player {} tries to move {} units ...'.format(pid, count), file=sys.stderr)
+                log('Player {} tries to move {} units ...'.format(pid, count))
                 return False
 
             # If everything is ok, we create the troop
@@ -311,43 +314,37 @@ def execute_orders(pid, actions):
 
                 troops += [t]
                 factories[f_from].ncyborgs -= count
-                print('Player {} creating new troop, {} {} {}, ETA = {}'.format(pid,
+                log('Player {} creating new troop, {} {} {}, ETA = {}'.format(pid,
                                                                                  t.f_from,
                                                                                  t.f_to,
                                                                                  count,
-                                                                                 t.eta),
-                      file = sys.stderr)
+                                                                                 t.eta))
                 
         elif atype == '2_INC':
             f_from = int(action[1])
 
             # Errors
             if f_from < 0 or f_from >= len(factories):
-                print('Player {} : non-existent factory {}'.format(pid, f_from), file=sys.stderr)
+                log('Player {} : non-existent factory {}'.format(pid, f_from))
                 return False
 
             if factories[f_from].owner != pid:
-                print('Player {} tries to move units from enemy factory {}'.format(pid, f_from), file=sys.stderr)
+                log('Player {} tries to move units from enemy factory {}'.format(pid, f_from))
                 return False
 
             if factories[f_from].ncyborgs < 10:
-                print('Player {} tries to inc a factory {} with not enough robots'.format(pid, f_from),
-                      file = sys.stderr)
+                log('Player {} tries to inc a factory {} with not enough robots'.format(pid, f_from))
                 return False
 
             if factories[f_from].prod == 3:
-                print('Player {} tries to inc the already maxxed factory {}'.format(pid, f_from),
-                      file = sys.stderr)
+                log('Player {} tries to inc the already maxxed factory {}'.format(pid, f_from))
 
             factories[f_from].prod    += 1
             factories[f_from].ncyborgs -= 10
 
-            print('Player {} increases production of factory {} to {}'.format(pid,
-                                                                              f_from,
-                                                                              factories[f_from].prod),
-                  file = sys.stderr)
+            log('Player {} increases production of factory {} to {}'.format(pid, f_from, factories[f_from].prod))
         elif atype == 'MSG':
-            print('Player {} says {}'.format(pid, action[1]), file = sys.stderr)
+            log('Player {} says {}'.format(pid, action))
         elif atype == 'WAIT':
             pass
         
@@ -457,21 +454,21 @@ if __name__ == '__main__':
     init()
     turn = 0
     while True:
-        print('\n---- Turn {}'.format(turn//2 + 1), file=sys.stderr)
-        print('{} troops in motion'.format(len(troops)), file=sys.stderr)
-        print('{} bombs in motion'.format(len(bombs)), file=sys.stderr)
+        log('\n---- Turn {}'.format(turn//2 + 1))
+        log('{} troops in motion'.format(len(troops)))
+        log('{} bombs in motion'.format(len(bombs)))
             
         # Sending turn info to player 1
         send_turn_info(turn)
-        p1_turn = input()
+        p1_turn = raw_input()
 
-        print('p1 = ' + p1_turn, file=sys.stderr)
+        log('p1 = ' + p1_turn)
         
         # Sending turn info to player 2
         send_turn_info(turn+1)        
-        p2_turn = input()
+        p2_turn = raw_input()
 
-        print('p2 = ' + p2_turn, file=sys.stderr)
+        log('p2 = ' + p2_turn)
 
         # Evolving the situation according to both players
         evolve(p1_turn, p2_turn)
@@ -482,17 +479,17 @@ if __name__ == '__main__':
             count = [0, 0, 0]
             for f in factories:
                 count[f.owner+1] += f.ncyborgs
-                print(count, file=sys.stderr)
-            print('--------', file=sys.stderr)
+                log(str(count))
+            log('--------')
             for t in troops:
                 count[t.owner+1] += t.ncyborgs
-                print(count, file=sys.stderr)
+                log(str(count))
 
-            print('Maximum turns elapsed, Scores = {} / {}'.format(count[0], count[2]), file=sys.stderr)
-            print('Final state of the game :', file=sys.stderr)
-            print('\t\t#ID\tOwner\tProd\tUnits', file=sys.stderr)
+            log('Maximum turns elapsed, Scores = {} / {}'.format(count[0], count[2]))
+            log('Final state of the game :')
+            log('\t\t#ID\tOwner\tProd\tUnits')
             for f in factories:
-                print('\t\t{}\t{}\t{}\t{}'.format(f.fid, f.owner, f.prod, f.ncyborgs), file=sys.stderr)      
+                log('\t\t{}\t{}\t{}\t{}'.format(f.fid, f.owner, f.prod, f.ncyborgs))      
 
 
             if count[0] == count[2]:
