@@ -106,7 +106,7 @@ def init():
             if i == 1:
                 init_unit = random.randint(min_init_units, max_init_units)
             else:
-                init_unit = random.randint(0, 5*prod_rate + 1)
+                init_unit = random.randint(0, 5*prod_rate)
 
             factories[i].fid      = i
             factories[i].x        = x
@@ -233,7 +233,7 @@ def end_game(ranking, tied=False):
 def execute_orders(pid, actions):
     global factories, bombs, troops
     
-    actions = actions.split(';')
+    actions = [action.strip() for action in actions.split(';')]
     for i in range(len(actions)):
         if actions[i].startswith('BOMB'):
             actions[i] = '0_'+actions[i]
