@@ -16,6 +16,7 @@ damage_duration = 5
 nbombs = [2, 0, 2]
 scores = [0, 0, 0]
 
+stfu = False
 def log(x):
     if not stfu:
         sys.stderr.write(x+'\n')
@@ -24,8 +25,6 @@ if len(sys.argv) > 1:
     seed = sys.argv[1]
 else:
     seed = 123456789
-
-stfu_mode = False
     
 random.seed(seed)
 
