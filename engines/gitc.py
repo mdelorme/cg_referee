@@ -244,14 +244,14 @@ def execute_orders(pid, actions):
             actions[i] = '1_'+actions[i]
         elif actions[i].startswith('INC'):
             actions[i] = '2_'+actions[i]
-
+            
+    bomb_paths = []
+    
     actions.sort() # We sort to get the order of the operations right
     for a_token in actions:
         action = a_token.split(' ')
 
         atype = action[0]
-
-        bomb_targets = []
 
         if atype == '0_BOMB':
             f_from = int(action[1])
@@ -275,13 +275,15 @@ def execute_orders(pid, actions):
                 return False
 
             if valid:
-                bomb_targets += [f_to]
+                bomb_paths += [(f_from, f_to)]
 
                 b = Bomb()
                 b.owner = pid
                 b.f_from = f_from
                 b.f_to   = f_to
                 b.timer  = dist_table[f_from, f_to]
+                
+                bombs += [b]
                 nbombs[pid+1] -= 1
                 log('Player {} sending bomb from {} to {}'.format(pid, f_from, f_to))
 
@@ -289,7 +291,8 @@ def execute_orders(pid, actions):
         elif atype == '1_MOVE':
             f_from = int(action[1])
             f_to   = int(action[2])
-
+            valid = True
+            
             # Errors
             if f_from < 0 or f_from >= len(factories):
                 log('Player {} : non-existent factory {}'.format(pid, f_from))
@@ -312,9 +315,12 @@ def execute_orders(pid, actions):
             if count < 0:
                 log('Player {} tries to move {} units ...'.format(pid, count))
                 return False
+            
+            if count <= 0 or (f_from, f_to) in bomb_paths or factories[f_from].ncyborgs <= 0:
+                valid = False
 
             # If everything is ok, we create the troop
-            if count > 0 and f_to not in bomb_targets and factories[f_from].ncyborgs > 0:
+            if valid:
 
                 if count > factories[f_from].ncyborgs:
                     count = factories[f_from].ncyborgs
@@ -335,8 +341,10 @@ def execute_orders(pid, actions):
                                                                               t.f_to,
                                                                               count,
                                                                               t.eta))
-            elif f_to in bomb_targets:
-                log('WARNING : Player {} tries to send troops to bomb destination {}, move cancelled'.format(pid, t.f_to))
+            elif (f_from, f_to) in bomb_paths:
+                log('WARNING : Player {} tries to send troops from bomb source {} to bomb destination {}, move cancelled'.format(pid, 
+                                                                                                                                 t.f_from,
+                                                                                                                                 t.f_to))
             elif count == 0:
                 log('WARNING : Player {} tries to send 0 troops ! Move ignored.'.format(pid))
                 
