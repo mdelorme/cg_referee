@@ -199,3 +199,9 @@ The second important thing is that once the inputs of a bot send, the game binar
 Finally if the game is finished, the engine must return the ranking to the referee. The ranking is the order of the players, starting from 0, and separated by spaces. If the game ends up in a tie, you can just send `tied`, and every players will be considered as first place.
 
 If things are getting confused, read the `tron_eval.cpp` or the `gitc.py` files provided as an example to work for Tron and Ghost in the Cell.
+
+## Contributors
+
+* Aveuh (http://github.com/mdelorme)
+* Sylver-Phoenix (https://github.com/sylver-phoenix)
+
