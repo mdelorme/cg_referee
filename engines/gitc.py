@@ -343,8 +343,8 @@ def execute_orders(pid, actions):
                                                                               t.eta))
             elif (f_from, f_to) in bomb_paths:
                 log('WARNING : Player {} tries to send troops from bomb source {} to bomb destination {}, move cancelled'.format(pid, 
-                                                                                                                                 t.f_from,
-                                                                                                                                 t.f_to))
+                                                                                                                                 f_from,
+                                                                                                                                 f_to))
             elif count == 0:
                 log('WARNING : Player {} tries to send 0 troops ! Move ignored.'.format(pid))
                 
